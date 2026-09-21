@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Para Frinnez</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Shippori+Mincho:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #0a0908;
+    --charcoal: #17130f;
+    --charcoal-2: #221a15;
+    --paper: #ece3d6;
+    --paper-dim: #a9998a;
+    --blood: #7a0e0e;
+    --blood-bright: #b3231f;
+    --blood-glow: #e14b3f;
+    --iris: #d6423a;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); height: 100%; }
+  body {
+    min-height: 100%;
+    margin: 0;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(122,14,14,0.25) 0%, transparent 55%),
+      linear-gradient(180deg, var(--charcoal) 0%, var(--black) 70%);
+    color: var(--paper);
+    font-family: 'Shippori Mincho', 'Hiragino Mincho ProN', serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 18px;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* textura de niebla/humo roja */
+  .haze {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      radial-gradient(circle at 20% 85%, rgba(179,35,31,0.16), transparent 40%),
+      radial-gradient(circle at 85% 20%, rgba(179,35,31,0.12), transparent 45%);
+  }
+
+  /* motas de ceniza */
+  .ash { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+  .ash span {
+    position: absolute;
+    width: 2px; height: 2px;
+    background: var(--paper-dim);
+    border-radius: 50%;
+    opacity: 0.35;
+    animation: drift 9s linear infinite;
+  }
+  @keyframes drift {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    10% { opacity: 0.5; }
+    100% { transform: translateY(-120px) translateX(14px); opacity: 0; }
+  }
+
+  .stage { position: relative; z-index: 1; width: 100%; max-width: 620px; }
+
+  /* ---- Sobre ---- */
+  #envelope-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    cursor: pointer;
+  }
+  .envelope {
+    position: relative;
+    width: min(340px, 82vw);
+    aspect-ratio: 3 / 2;
+    filter: drop-shadow(0 20px 45px rgba(0,0,0,0.7));
+  }
+  .env-body {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(155deg, #241a17, var(--charcoal) 65%);
+    border: 1px solid rgba(179,35,31,0.4);
+    border-radius: 4px;
+  }
+  .env-flap {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 55%;
+    background: linear-gradient(155deg, #2c211d, #1a1310);
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    transform-origin: top center;
+    transition: transform 0.9s cubic-bezier(.6,-0.1,.2,1.4);
+    border-bottom: 1px solid rgba(179,35,31,0.3);
+  }
+  /* sello: ojo carmesí */
+  .env-seal {
+    position: absolute;
+    top: 44%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 50%, var(--black) 0%, var(--black) 32%, var(--iris) 34%, var(--blood-bright) 55%, var(--black) 78%);
+    box-shadow: 0 0 14px rgba(225,75,63,0.55), 0 4px 10px rgba(0,0,0,0.5);
+    z-index: 3;
+    transition: opacity 0.4s ease;
+  }
+  .env-seal::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.6);
+  }
+  .env-hint {
+    position: absolute;
+    bottom: -38px; left: 0; right: 0;
+    text-align: center;
+    font-family: 'Zen Antique', serif;
+    color: var(--paper-dim);
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
+  }
+  .envelope.open .env-flap { transform: rotateX(180deg); }
+  .envelope.open .env-seal { opacity: 0; }
+
+  /* ---- Carta ---- */
+  #letter-wrap {
+    display: none;
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.9s ease, transform 0.9s ease;
+  }
+  #letter-wrap.show { display: block; opacity: 1; transform: translateY(0); }
+
+  .letter {
+    background:
+      linear-gradient(180deg, rgba(179,35,31,0.05), transparent 18%),
+      linear-gradient(180deg, #201a16, var(--charcoal-2) 8%);
+    color: var(--paper);
+    border-radius: 2px;
+    padding: 56px 42px 44px;
+    box-shadow:
+      0 30px 70px rgba(0,0,0,0.7),
+      inset 0 0 60px rgba(0,0,0,0.4);
+    position: relative;
+    border: 1px solid rgba(179,35,31,0.25);
+  }
+  .letter::before {
+    content: "";
+    position: absolute;
+    inset: 9px;
+    border: 1px solid rgba(179,35,31,0.18);
+    pointer-events: none;
+  }
+  /* goteo decorativo */
+  .drip {
+    position: absolute;
+    top: -1px; left: 40px;
+    width: 3px; height: 34px;
+    background: linear-gradient(180deg, var(--blood-bright), transparent);
+    border-radius: 0 0 3px 3px;
+    opacity: 0.8;
+  }
+  .drip::after {
+    content: "";
+    position: absolute;
+    bottom: -4px; left: -1.5px;
+    width: 6px; height: 6px;
+    background: var(--blood-bright);
+    border-radius: 50%;
+  }
+  .drip.d2 { left: 72%; height: 22px; opacity: 0.55; }
+
+  .kagune {
+    position: absolute;
+    right: -18px;
+    bottom: -22px;
+    width: 140px;
+    height: 140px;
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .spider-lily {
+    position: absolute;
+    top: -30px;
+    left: -22px;
+    width: 150px;
+    height: 150px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .salutation {
+    font-family: 'Zen Antique', serif;
+    font-size: clamp(1.9rem, 5vw, 2.6rem);
+    margin: 0 0 30px;
+    color: var(--blood-glow);
+    line-height: 1.15;
+    letter-spacing: 0.02em;
+    text-shadow: 0 0 18px rgba(225,75,63,0.35);
+    position: relative;
+    z-index: 1;
+  }
+
+  .letter p {
+    font-size: 1.04rem;
+    line-height: 1.95;
+    margin: 0 0 20px;
+    max-width: 62ch;
+    position: relative;
+    z-index: 1;
+    color: #e8ddd0;
+  }
+
+  .letter p.first-line::first-letter {
+    font-family: 'Zen Antique', serif;
+    font-size: 3.2rem;
+    float: left;
+    line-height: 0.75;
+    padding: 8px 10px 0 0;
+    color: var(--blood-bright);
+    text-shadow: 0 0 12px rgba(225,75,63,0.5);
+  }
+
+  .signoff {
+    margin-top: 36px;
+    font-family: 'Zen Antique', serif;
+    font-size: 1.3rem;
+    color: var(--blood-glow);
+    position: relative;
+    z-index: 1;
+  }
+
+  .song-block {
+    margin-top: 40px;
+    padding-top: 26px;
+    border-top: 1px solid rgba(179,35,31,0.35);
+    position: relative;
+    z-index: 1;
+  }
+  .song-label {
+    font-family: 'Zen Antique', serif;
+    font-size: 0.95rem;
+    color: var(--paper-dim);
+    margin-bottom: 12px;
+    letter-spacing: 0.03em;
+  }
+
+  #mute-toggle {
+    position: fixed;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    right: 20px;
+    z-index: 5;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 1px solid rgba(179,35,31,0.5);
+    background: rgba(10,9,8,0.75);
+    color: var(--blood-glow);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+  }
+  #mute-toggle.show { display: flex; }
+  #mute-toggle:hover { background: var(--blood); }
+  .song-player { position: relative; max-width: 360px; }
+  .song-cover {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    border: 1px solid var(--blood-bright);
+    border-radius: 4px;
+    padding: 10px 22px 10px 16px;
+    color: var(--blood-glow);
+    width: fit-content;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+  .song-cover::after {
+    content: "reproducir canción";
+    font-family: 'Shippori Mincho', serif;
+    font-size: 0.98rem;
+  }
+  .song-cover:hover { background: var(--blood); color: var(--paper); }
+  .song-cover.playing { display: none; }
+  .song-frame-wrap {
+    display: none;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid rgba(179,35,31,0.5);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+  .song-frame-wrap.show { display: block; }
+  .song-frame-wrap iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: none; }
+
+  .footer-note {
+    text-align: center;
+    margin-top: 28px;
+    color: var(--paper-dim);
+    font-size: 0.85rem;
+    font-family: 'Zen Antique', serif;
+    letter-spacing: 0.04em;
+  }
+
+
+  /* ---- Secciones interactivas ---- */
+  .extra-section {
+    margin-top: 42px;
+    padding-top: 28px;
+    border-top: 1px solid rgba(179,35,31,0.35);
+    position: relative;
+    z-index: 1;
+  }
+  .extra-title {
+    font-family: 'Zen Antique', serif;
+    color: var(--blood-glow);
+    font-size: 1.45rem;
+    margin: 0 0 12px;
+    text-shadow: 0 0 14px rgba(225,75,63,0.25);
+  }
+  .extra-text {
+    color: #d9cec1;
+    font-size: 0.98rem;
+    line-height: 1.8;
+    margin: 0 0 18px;
+  }
+  .memory-note {
+    margin: 22px 0;
+    padding: 18px;
+    border: 1px solid rgba(179,35,31,0.28);
+    background: rgba(10,9,8,0.28);
+    text-align: center;
+    font-style: italic;
+    color: #ded2c5;
+  }
+  .memory-note strong {
+    display: block;
+    margin-top: 8px;
+    color: var(--blood-glow);
+    font-family: 'Zen Antique', serif;
+    font-style: normal;
+  }
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .future-card {
+    appearance: none;
+    border: 1px solid rgba(179,35,31,0.3);
+    background: rgba(20,15,12,0.65);
+    color: #e8ddd0;
+    padding: 15px 12px;
+    min-height: 74px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: 'Shippori Mincho', serif;
+    font-size: 0.95rem;
+    transition: transform .25s ease, background .25s ease, border-color .25s ease;
+  }
+  .future-card:hover {
+    transform: translateY(-2px);
+    background: rgba(122,14,14,0.32);
+    border-color: rgba(225,75,63,0.65);
+  }
+  .future-card .card-icon {
+    display: block;
+    color: var(--blood-glow);
+    font-size: 1.2rem;
+    margin-bottom: 5px;
+  }
+  .reasons-box {
+    margin-top: 18px;
+    text-align: center;
+  }
+  #reason-text {
+    min-height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+    border: 1px solid rgba(179,35,31,0.25);
+    background: rgba(10,9,8,0.3);
+    color: #e8ddd0;
+    line-height: 1.7;
+  }
+  .red-button {
+    margin-top: 12px;
+    border: 1px solid rgba(225,75,63,0.6);
+    background: transparent;
+    color: var(--blood-glow);
+    padding: 10px 18px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: 'Shippori Mincho', serif;
+    transition: .25s ease;
+  }
+  .red-button:hover {
+    background: var(--blood);
+    color: var(--paper);
+  }
+
+  /* transición suave al cambiar de frase */
+  #reason-text.reason-changing {
+    animation: reasonChange .38s ease;
+  }
+  @keyframes reasonChange {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .secret-wrap {
+    text-align: center;
+    margin-top: 18px;
+  }
+  #secret-message {
+    display: none;
+    margin-top: 18px;
+    padding: 22px 16px;
+    border: 1px solid rgba(225,75,63,0.5);
+    background: radial-gradient(circle, rgba(122,14,14,0.22), rgba(10,9,8,0.45));
+    color: #eee2d5;
+    line-height: 1.85;
+    animation: secretReveal .8s ease;
+  }
+  #secret-message.show { display: block; }
+  @keyframes secretReveal {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .finale {
+    text-align: center;
+    margin-top: 48px;
+    padding: 30px 10px 8px;
+    position: relative;
+  }
+  .finale-heart {
+    color: var(--blood-glow);
+    font-size: 2rem;
+    animation: heartbeat 1.8s ease-in-out infinite;
+    display: inline-block;
+  }
+  @keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.14); }
+  }
+  .finale p {
+    margin: 10px auto 0;
+    max-width: 42ch;
+    color: #d9cec1;
+    line-height: 1.8;
+  }
+  .song-caption {
+    margin-top: 12px;
+    color: var(--paper-dim);
+    font-size: .9rem;
+    line-height: 1.6;
+  }
+  /* ---- estética Tokyo Ghoul: rojo carmesí, glitch y ambiente de expediente ---- */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      linear-gradient(rgba(255,255,255,0.012) 50%, rgba(0,0,0,0.08) 50%),
+      radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.48) 100%);
+    background-size: 100% 4px, 100% 100%;
+    mix-blend-mode: screen;
+    opacity: 0.55;
+  }
+
+  body::after {
+    content: "東京喰種";
+    position: fixed;
+    left: 14px;
+    bottom: 12px;
+    color: rgba(225,75,63,0.18);
+    font-family: 'Zen Antique', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.35em;
+    writing-mode: vertical-rl;
+    pointer-events: none;
+    z-index: 0;
+    text-shadow: 0 0 12px rgba(225,75,63,0.22);
+  }
+
+  .letter {
+    overflow: hidden;
+  }
+
+  .letter::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(90deg, transparent 0 49.7%, rgba(225,75,63,0.055) 50%, transparent 50.3%),
+      linear-gradient(180deg, transparent 0 84%, rgba(122,14,14,0.08) 100%);
+    opacity: 0.8;
+    z-index: 0;
+  }
+
+  .salutation {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  .salutation::before {
+    content: "// 001";
+    display: block;
+    font-family: 'Shippori Mincho', serif;
+    font-size: 0.58rem;
+    font-weight: 500;
+    color: rgba(217,206,193,0.45);
+    letter-spacing: 0.3em;
+    margin-bottom: 10px;
+  }
+
+  .extra-title {
+    position: relative;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .extra-title::after {
+    content: "";
+    display: block;
+    width: 68px;
+    height: 1px;
+    margin-top: 8px;
+    background: linear-gradient(90deg, var(--blood-glow), transparent);
+    box-shadow: 0 0 8px rgba(225,75,63,0.35);
+  }
+
+  .red-button {
+    box-shadow: inset 0 0 0 1px rgba(225,75,63,0.06), 0 0 14px rgba(122,14,14,0.12);
+  }
+
+  .red-button:active {
+    transform: scale(0.97);
+  }
+
+  #reason-text {
+    position: relative;
+    overflow: hidden;
+  }
+
+  #reason-text::before {
+    content: "RC-";
+    position: absolute;
+    left: 10px;
+    top: 7px;
+    color: rgba(225,75,63,0.16);
+    font-family: 'Zen Antique', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+  }
+
+  .reason-changing {
+    animation: reasonGlitch .42s ease;
+  }
+
+  @keyframes reasonGlitch {
+    0% { opacity: 0; transform: translateX(-7px); filter: blur(2px); }
+    35% { opacity: 0.65; transform: translateX(3px); filter: blur(.5px); }
+    65% { opacity: 0.9; transform: translateX(-1px); filter: none; }
+    100% { opacity: 1; transform: translateX(0); }
+  }
+
+  .secret-wrap {
+    background: linear-gradient(180deg, rgba(122,14,14,0.03), transparent);
+  }
+
+  #secret-message.show {
+    box-shadow: 0 0 22px rgba(122,14,14,0.16), inset 0 0 28px rgba(0,0,0,0.18);
+  }
+
+  .kagune {
+    animation: kagunePulse 5s ease-in-out infinite;
+    transform-origin: 70% 80%;
+  }
+
+  @keyframes kagunePulse {
+    0%, 100% { opacity: .34; transform: translate(0,0) scale(1); }
+    50% { opacity: .58; transform: translate(-3px,-2px) scale(1.025); }
+  }
+
+  .env-seal {
+    animation: kakugan 3s ease-in-out infinite;
+  }
+
+  @keyframes kakugan {
+    0%, 100% { box-shadow: 0 0 14px rgba(225,75,63,0.45), 0 4px 10px rgba(0,0,0,0.5); }
+    50% { box-shadow: 0 0 24px rgba(225,75,63,0.9), 0 4px 10px rgba(0,0,0,0.5); }
+  }
+
+  @media (max-width: 480px) {
+    .cards { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 480px) {
+    .letter { padding: 44px 24px 34px; }
+    .kagune { width: 100px; height: 100px; }
+    .spider-lily { width: 110px; height: 110px; top: -20px; left: -16px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .env-flap, #letter-wrap { transition: none !important; }
+    .ash span { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="haze"></div>
+<div class="ash" id="ash"></div>
+
+<div class="stage">
+
+  <div id="envelope-wrap">
+    <div>
+      <div class="envelope" id="envelope">
+        <div class="env-body"></div>
+        <div class="env-flap"></div>
+        <div class="env-seal"></div>
+      </div>
+      <div class="env-hint">toca el sobre</div>
+    </div>
+  </div>
+
+  <div id="letter-wrap">
+    <div class="letter">
+      <div class="drip"></div>
+      <div class="drip d2"></div>
+
+      <!-- líneas tipo kagune, decoración original abstracta -->
+      <svg class="kagune" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+        <path d="M130 10 C 90 30, 100 70, 70 90 C 40 110, 50 130, 20 135" stroke="#b3231f" stroke-width="2" fill="none" opacity="0.7"/>
+        <path d="M120 30 C 85 50, 95 80, 60 100 C 35 115, 45 128, 15 132" stroke="#7a0e0e" stroke-width="1.5" fill="none" opacity="0.5"/>
+        <path d="M135 55 C 100 65, 105 95, 75 110" stroke="#e14b3f" stroke-width="1" fill="none" opacity="0.4"/>
+      </svg>
+
+      <!-- Lycoris radiata (flor araña roja), ilustración original -->
+      <svg class="spider-lily" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+        <g transform="translate(80,95)">
+          <!-- 6 pétalos delgados y recurvados por flor, repetidos para 3 flores -->
+          <g id="lily-a">
+            <g stroke="#c4302a" stroke-width="1.3" fill="none" opacity="0.9">
+              <path d="M0,0 C 4,-14 2,-26 10,-38 C 14,-30 12,-18 6,-4 C 9,-16 16,-24 26,-28 C 20,-20 14,-10 8,0"/>
+              <path d="M0,0 C -4,-14 -2,-26 -10,-38 C -14,-30 -12,-18 -6,-4 C -9,-16 -16,-24 -26,-28 C -20,-20 -14,-10 -8,0"/>
+              <path d="M0,0 C 2,-15 10,-24 22,-30 C 17,-22 14,-12 9,-2"/>
+              <path d="M0,0 C -2,-15 -10,-24 -22,-30 C -17,-22 -14,-12 -9,-2"/>
+              <path d="M0,0 C 1,-18 6,-30 4,-42 C 0,-32 -2,-18 0,0"/>
+              <path d="M0,0 C 8,-6 18,-8 28,-4 C 20,-2 12,2 4,2"/>
+              <path d="M0,0 C -8,-6 -18,-8 -28,-4 C -20,-2 -12,2 -4,2"/>
+            </g>
+            <!-- estambres largos y curvados, rasgo distintivo de la lycoris radiata -->
+            <g stroke="#e05a4e" stroke-width="0.9" fill="none" opacity="0.85">
+              <path d="M0,-2 C 6,-20 2,-40 14,-56"/>
+              <path d="M0,-2 C -2,-22 4,-42 -2,-58"/>
+              <path d="M0,-2 C -8,-18 -6,-38 -18,-52"/>
+              <path d="M0,-2 C 10,-16 14,-34 24,-46"/>
+            </g>
+            <circle cx="14" cy="-56" r="1.4" fill="#e05a4e"/>
+            <circle cx="-2" cy="-58" r="1.4" fill="#e05a4e"/>
+            <circle cx="-18" cy="-52" r="1.4" fill="#e05a4e"/>
+            <circle cx="24" cy="-46" r="1.4" fill="#e05a4e"/>
+            <circle cx="0" cy="0" r="2" fill="#7a0e0e"/>
+          </g>
+          <use href="#lily-a" transform="translate(-46,18) scale(0.62) rotate(-12)" opacity="0.75"/>
+          <use href="#lily-a" transform="translate(44,22) scale(0.5) rotate(10)" opacity="0.6"/>
+          <!-- tallos -->
+          <path d="M0,0 C -1,14 1,26 -1,40" stroke="#4a6b3a" stroke-width="1.2" fill="none" opacity="0.55"/>
+          <path d="M-46,18 C -47,28 -45,36 -47,46" stroke="#4a6b3a" stroke-width="1" fill="none" opacity="0.45"/>
+          <path d="M44,22 C 43,30 45,36 43,44" stroke="#4a6b3a" stroke-width="1" fill="none" opacity="0.4"/>
+        </g>
+      </svg>
+
+      <p class="salutation">Frinnez,</p>
+
+      <p class="first-line">El poco tiempo que tenemos juntos de verdad me ha gustado conocerte, y el tiempo que paso contigo es el mejor. Espero seguir estando contigo, quisiera que lo nuestro en verdad dure.</p>
+
+      <p>Te amo, y espero que algún día vivamos felices juntos, en nuestra propia casa, con veinte gatos y quince perros. Adoro todo lo que hacemos, y espero que nunca te aburras ni te canses de mí.</p>
+
+      <p>Espero que te sigas enamorando de mí y que te guste tanto como me gustas tú a mí. Te adoro, y espero que cada día juntos lo notes, y que sigamos juntos por mucho rato.</p>
+
+      <p class="signoff">Te amo.<br>— Hernando</p>
+
+      <div class="extra-section">
+        <div class="extra-title">♪ Esta canción es para ti</div>
+        <div class="song-caption">
+          Esta canción me hace pensar en ti.
+        </div>
+      </div>
+
+      <div class="extra-section">
+        <div class="extra-title">❤️ Cosas que me gustan de ti</div>
+        <p class="extra-text">
+          No quiero hacer una lista perfecta. Prefiero que cada vez que pulses
+          el botón aparezca una razón diferente.
+        </p>
+        <div class="reasons-box">
+          <div id="reason-text">Pulsa el botón y descubre una.</div>
+          <button class="red-button" id="reason-button">Dame otra razón ♡</button>
+        </div>
+      </div>
+
+      <div class="extra-section secret-wrap">
+        <div class="extra-title">🔐 Un último mensaje</div>
+        <p class="extra-text">
+          Llegaste al final, pero quiero decirte algo más
+        </p>
+        <button class="red-button" id="secret-button">Abrir mensaje secreto</button>
+        <div id="secret-message">
+          Si en algún momento recuerdas con cariño esta carta, espero que la aprecies,
+          aunque no esté hecha en físico. Será el primer regalo de los que te daré por el mes.
+          Solo dame un poquito de tiempo y espera con ansias. Te amo.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="footer-note">— hecha con cariño, para ti —</div>
+  </div>
+
+  <button id="mute-toggle" aria-label="Silenciar o activar música">
+    <svg id="mute-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M4 9v6h4l5 5V4L8 9H4z" fill="currentColor"/>
+      <path d="M16 8a5 5 0 010 8M18.5 5.5a9 9 0 010 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>
+  </button>
+
+</div>
+
+<script>
+  // Ceniza flotante
+  const ashContainer = document.getElementById('ash');
+  const ashCount = window.innerWidth < 500 ? 26 : 45;
+  for (let i = 0; i < ashCount; i++) {
+    const s = document.createElement('span');
+    s.style.left = Math.random() * 100 + '%';
+    s.style.top = 60 + Math.random() * 40 + '%';
+    s.style.animationDelay = (Math.random() * 9) + 's';
+    s.style.animationDuration = (7 + Math.random() * 5) + 's';
+    const size = Math.random() * 1.5 + 1;
+    s.style.width = size + 'px';
+    s.style.height = size + 'px';
+    ashContainer.appendChild(s);
+  }
+
+  const envelope = document.getElementById('envelope');
+  const envelopeWrap = document.getElementById('envelope-wrap');
+  const letterWrap = document.getElementById('letter-wrap');
+  const muteToggle = document.getElementById('mute-toggle');
+
+  // Música local: al tocar el sobre el navegador permite reproducirla con sonido.
+  // Se crea con JS (no como <audio> oculto en el HTML) para que funcione
+  // aunque esté dentro de un contenedor que empieza en display:none.
+  const bgAudio = new Audio('cancion.mp3');
+  bgAudio.loop = true;
+  bgAudio.preload = 'auto';
+  let muted = false;
+
+  function startMusic() {
+    bgAudio.volume = 0.75;
+    bgAudio.muted = false;
+    bgAudio.play().then(() => {
+      muteToggle.classList.add('show');
+    }).catch(() => {
+      // Si el navegador bloquea el audio, el botón puede volver a intentarlo con otra interacción.
+      muteToggle.classList.add('show');
+    });
+  }
+
+  function toggleMute() {
+    if (bgAudio.paused) {
+      // Si el autoplay fue bloqueado, este clic (interacción del usuario)
+      // sí puede iniciar la reproducción.
+      bgAudio.muted = false;
+      bgAudio.play().catch(() => {});
+      return;
+    }
+    muted = !muted;
+    bgAudio.muted = muted;
+    muteToggle.style.opacity = muted ? '0.55' : '1';
+  }
+
+  muteToggle.addEventListener('click', toggleMute);
+
+  envelopeWrap.addEventListener('click', () => {
+    if (envelope.classList.contains('open')) return;
+    envelope.classList.add('open');
+    startMusic();
+    setTimeout(() => {
+      envelopeWrap.style.display = 'none';
+      letterWrap.classList.add('show');
+    }, 650);
+  }, { once: true });
+
+  // Mensajes de futuro
+  const futureCards = document.querySelectorAll('.future-card');
+  const futureMessage = document.getElementById('future-message');
+
+  futureCards.forEach(card => {
+    card.addEventListener('click', () => {
+      futureMessage.textContent = card.dataset.message;
+      futureMessage.style.display = 'block';
+      futureMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  });
+
+  // ============================================================
+  // FRASES DE "COSAS QUE ME GUSTAN DE TI"
+  // Puedes cambiar, borrar o agregar las frases de esta lista.
+  // Cada frase debe ir entre comillas simples y terminar en coma,
+  // excepto la última.
+  // ============================================================
+  const reasons = [
+    'Porque contigo puedo ser yo sin tener que fingir.',
+    'Porque incluso en el momento más simple contigo todo se siente especial.',
+    'Porque me gusta cómo poco a poco te has vuelto parte de mi vida.',
+    'Porque me haces querer construir un futuro contigo.',
+    'Porque me gusta escucharte en cualquier momento, sin importar de qué hablemos.',
+    'Porque cada día contigo siento una razón nueva para quererte más.',
+    'Porque quiero seguir descubriendo lo que te gusta y todo lo que forma parte de ti.',
+    'Porque amo el color de tus ojos.',
+    'Porque tus momentos en los que te da pena también los adoro.',
+    'Porque amo cuando me dices cosas lindas.',
+    'Porque me encanta cuando te pones nerviosa.',
+    'Porque amo el hecho de saber que quieres ir en serio conmigo.'
+  ];
+
+  let currentReason = -1;
+  const reasonText = document.getElementById('reason-text');
+  const reasonButton = document.getElementById('reason-button');
+
+  reasonButton.addEventListener('click', () => {
+    currentReason = (currentReason + 1) % reasons.length;
+    reasonText.classList.remove('reason-changing');
+    void reasonText.offsetWidth;
+    reasonText.textContent = reasons[currentReason];
+    reasonText.classList.add('reason-changing');
+  });
+
+  // Mensaje secreto
+  const secretButton = document.getElementById('secret-button');
+  const secretMessage = document.getElementById('secret-message');
+
+  secretButton.addEventListener('click', () => {
+    secretMessage.classList.add('show');
+    secretButton.textContent = '♡ Ya lo sabes';
+    secretButton.disabled = true;
+  });
+
+</script>
+
+</body>
+</html>
